@@ -2,27 +2,18 @@ const express = require('express')
 const bodyparser = require('body-parser')
 const {config} = require('dotenv')
 const cors = require('cors')
-const { Vonage } = require('@vonage/server-sdk')
 config()
+const client = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_ACCOUNT_AUTH_TOKEN);
 
-const app = express()
-const vonage = new Vonage({
-  apiKey: process.env.VONAGE_API_KEY,
-  apiSecret: process.env.VONAGE_API_SECRET
-})
 
-app.use(cors())
-app.use(
-    bodyparser.urlencoded({
-      extended: true,
-      limit: '50mb',
-      parameterLimit: 50000,
-    }),
-  );
-app.use(bodyparser.json({limit: '50mb'}))
-app.use(express.json({limit:'50mb'}));
-app.use(express.raw({ type: "application/json", limit: "50mb" }));
-app.use(express.raw({ type: "application/pdf", limit: "10mb" }));
+
+
+//MiddleWare
+const app = express();
+app.use(express.json());
+app.use(cors());
+app.use(express.urlencoded({ extended: true }));
+
 
 app.listen(process.env.PORT,()=>{
     console.log("App is listening on port 3001")
@@ -30,13 +21,36 @@ app.listen(process.env.PORT,()=>{
 
 app.post('/send-new-sms', async (req,res)=>{
 
+
    await Promise.all(req.body.data.map(async (user) => { 
-    let to = user.to
-    let text = user.text
-    let from = 'Vonage APIs'
-  await vonage.sms.send({to, from, text})
-        .then(resp => { console.log('Message sent successfully'); console.log(resp); })
-        .catch(err => { console.log('There was an error sending the messages.'); console.error(err); });
+    let message = "Hello, we are interested in buying your property at " + user.address + " listed for $" + user.price + ". We hope to negotiate a price that is suitable for both parties.";
+    if(user.wirelessPrimaryPhoneNum1 == "" && user.wirelessPrimaryPhoneNum2=="" )
+    {
+      return;
+    }
+    else if(user.wirelessPrimaryPhoneNum1 != "")
+    {
+      client.messages
+    .create({
+        body: message,
+        from: 'whatsapp:+14155238886',
+        to: 'whatsapp:' + user.wirelessPrimaryPhoneNum1
+    })
+    .then(message => console.log(message.sid))
+    
+    }
+    else {
+
+    client.messages
+    .create({
+        body: message,
+        from: 'whatsapp:+14155238886',
+        to: 'whatsapp:' + user.wirelessPrimaryPhoneNum2
+    })
+    .then(message => console.log(message.sid))
+  }
+
+  
 
   }));
  
