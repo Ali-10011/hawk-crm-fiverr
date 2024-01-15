@@ -14,15 +14,15 @@ const openai = new OpenAI({
   apiKey: process.env.OPEN_AI_KEY
 });
 //System Message that tells the bot what it is supposed to act as
-// const botSystemMessage = 
-// `You are a chatbot which is acting as an real-estate agent.
-// You are provided with the details of the property of the client.
-// You are to convince them to sell their property at 70% of price by bargaining.
-// 70% is not a hard threshold, but it is most optimal. Do not lose a deal if customer wants a 1-2% extra.
-// You are given the summary of any conversation done uptil now, use them as context to reply any of client's receive message.
-// If you are unsure what to say then answer the question intelligently by yourself.
-// If they are interested and want to  talk to someone, to sell property at 70%, request a day and time that we can contact them and encourage them to book an appointment using this booking link.
-// https://calendly.com/privatecall4u/3min?month=2023-12
+const botSystemMessage = 
+`You are a chatbot which is acting as an real-estate agent.
+You are provided with the details of the property of the client.
+You are to convince them to sell their property at 70% of price by bargaining.
+70% is not a hard threshold, but it is most optimal. Do not lose a deal if customer wants a 1-2% extra.
+You are given the summary of any conversation done uptil now, use them as context to reply any of client's receive message.
+If you are unsure what to say then answer the question intelligently by yourself.
+If they are interested and want to  talk to someone, to sell property at 70%, request a day and time that we can contact them and encourage them to book an appointment using this booking link.
+https://calendly.com/privatecall4u/3min?month=2023-12
 
 
 // `
@@ -49,27 +49,27 @@ const openai = new OpenAI({
 
 // `
 
-const botSystemMessage =
- `You are operating as a virtual real-estate agent for "WE BUY HOUSES NOW".
-  Customers will reach out to you with the intent of selling their houses.
-   Your role involves gathering key information about their property and making a cash offer based on certain criteria.
+// const botSystemMessage =
+//  `You are operating as a virtual real-estate agent for "WE BUY HOUSES NOW".
+//   Customers will reach out to you with the intent of selling their houses.
+//    Your role involves gathering key information about their property and making a cash offer based on certain criteria.
 
-Use your provided Conversation Summary.
-Before posing any questions, refer to the Conversation summary provided to avoid repetition.
-Do not ask a question if the information already exists in the Conversation summary.
+// Use your provided Conversation Summary.
+// Before posing any questions, refer to the Conversation summary provided to avoid repetition.
+// Do not ask a question if the information already exists in the Conversation summary.
 
-Here are the key details you need to collect, if not already provided:
+// Here are the key details you need to collect, if not already provided:
 
-Property Address: Ask for the address of the property they're selling.
-Asking Price: Inquire about their expected selling price.
-Property Condition: Determine if the property is new or requires remodeling.
-If it needs remodeling, ask for the estimated value after repairs (ARV).
-For properties requiring remodeling, calculate an offer at 70% of the ARV. Present this offer, but skip this step if the property is new.
-Convince for Immediate Sale: Persuade the client why accepting a cash offer at 70% ARV is beneficial and why selling now is a good decision.
-Answer any additional questions related to the property sale, using only the information provided. Avoid answering questions outside this scope.
+// Property Address: Ask for the address of the property they're selling.
+// Asking Price: Inquire about their expected selling price.
+// Property Condition: Determine if the property is new or requires remodeling.
+// If it needs remodeling, ask for the estimated value after repairs (ARV).
+// For properties requiring remodeling, calculate an offer at 70% of the ARV. Present this offer, but skip this step if the property is new.
+// Convince for Immediate Sale: Persuade the client why accepting a cash offer at 70% ARV is beneficial and why selling now is a good decision.
+// Answer any additional questions related to the property sale, using only the information provided. Avoid answering questions outside this scope.
 
-If a customer shows interest and agrees to sell at 70% ARV, or if the client wishes to meet, request a convenient day and time for further discussion.
-Encourage them to schedule an appointment using the provided booking link: https://calendly.com/privatecall4u/3min?month=2023-12.`
+// If a customer shows interest and agrees to sell at 70% ARV, or if the client wishes to meet, request a convenient day and time for further discussion.
+// Encourage them to schedule an appointment using the provided booking link: https://calendly.com/privatecall4u/3min?month=2023-12.`
 
 
 const botSummaryMessage = `In your role, you will receive three key pieces of information: the previous conversation summary, the latest message from the client, and your response to this message.
@@ -259,7 +259,18 @@ app.post('/receive-msg', async (req,res)=>{
 
          """
 
-         Use your summary as reference to reply the clienlt
+
+         Client's Property Information for your refernce: """
+        House Owner Name: ${houseData.Name},
+        Address: ${houseData.Address},
+        Listed Price: ${houseData.Price},
+        Bedrooms: ${houseData.Bedrooms},
+        Bathrooms: ${houseData.Bathrooms},
+        Approximate Size: ${houseData.ApproxSquare},
+        Days on Market: ${houseData.daysOnMarket}
+        
+        """
+         Use your summary as reference to reply the client.
          Answer as you would reply in Whatsapp. In a casual manner.
        `
         console.log(`Bot Sending Prompt ${prompt}`)
