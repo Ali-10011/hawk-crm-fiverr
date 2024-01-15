@@ -152,7 +152,8 @@ app.post('/send-new-sms', async (req,res)=>{
           Bedrooms: user.bedrooms,
           Bathrooms: user.bathrooms,
           ApproxSquare: user.approxSquare,
-          DaysOnMarket: user.daysOnMarket     
+          DaysOnMarket: user.daysOnMarket,
+          LastMessage: message
       });
  
     }
@@ -205,36 +206,24 @@ app.post('/send-new-sms', async (req,res)=>{
 
 app.post('/receive-msg', async (req,res)=>{
 
-
+console.log("Received Message:")
+console.log(req.body);
   try {
     //Fetching the Chat History Uptil now
-    var { data, error } = await supabase
-        .from('ChatContext')
-        .select()
-        .eq('PhoneNumber', `${req.body.From.split(":")[1]}`);
+      //Fetching the Chat History Uptil now
+      const {data, error} = await supabase
+      .from('ChatContext')
+      .select()
+      .eq('PhoneNumber', `${req.body.From.split(":")[1]}`)
 
-    if (data[0]) { //customer exists
-        console.log("old customer");
-    } else if (!error) { //new customer
-        console.log("new customer");
-        try {
-            const insertResult = await supabase
-                .from('ChatContext')
-                .insert({
-                    PhoneNumber: `${req.body.From.split(":")[1]}`,
-                    Conversations: [{
-                        msg: req.body.Body,
-                        timestamp: Date.now(),
-                        user: "Client"
-                    }],
-                    Summary: "",
-                }).select();
-            data = insertResult.data
-            console.log('Insert result:', insertResult);
-        } catch (insertError) {
-            console.error('Error inserting new customer:', insertError);
-        }
-    } 
+
+//Fetching the Property Information corresponding that Phone Number
+const customerResponse = await supabase
+.from('Customer')
+.select()
+.eq('PhoneNumber', `${req.body.From.split(":")[1]}`)
+
+const houseData = customerResponse.data[0]
 
        //Fetching the Property Information corresponding that Phone Number
         // const customerResponse = await supabase
@@ -273,7 +262,7 @@ app.post('/receive-msg', async (req,res)=>{
          Use your summary as reference to reply the client.
          Answer as you would reply in Whatsapp. In a casual manner.
        `
-        console.log(`Bot Sending Prompt ${prompt}`)
+      
          //We have the comeplete prompt and all of our embeddings, now we can use it to get answer from gpt
        const chatCompletion = await openai.chat.completions.create({
          model: openAIQueryBotModel,
@@ -282,12 +271,10 @@ app.post('/receive-msg', async (req,res)=>{
          temperature: 0, // Set to 0 for deterministic results
        });
       
-       console.log(`Bot Response: 
-       ${chatCompletion.choices[0].message.content}
-       `)
+
        
       //Sending Reply Back to the Customer
-   const messageTest = client.messages
+     client.messages
        .create({
            body: `${chatCompletion.choices[0].message.content}`,
            from: 'whatsapp:+14155238886',
@@ -301,10 +288,19 @@ app.post('/receive-msg', async (req,res)=>{
        data[0].Conversations.push({msg: req.body.Body, timestamp: Date.now(), user: "Client"})
        data[0].Conversations.push({msg: chatCompletion.choices[0].message.content, timestamp: Date.now(), user: "System"})
 
+
+
        await supabase
                .from('ChatContext')
                .update({ Conversations: data[0].Conversations})
                .eq('PhoneNumber', `${req.body.From.split(":")[1]}`)
+
+       await supabase
+               .from('Customer')
+               .update({                 
+                   LastMessage:  chatCompletion.choices[0].message.content
+               })
+               .eq('PhoneNumber', `${req.body.From.split(":")[1]}`);
 
 
       //Creating summary of chat uptil now
@@ -325,9 +321,7 @@ app.post('/receive-msg', async (req,res)=>{
         """
            
       `
-      console.log(`Bot Summary Prompt 
-      ${summaryPrompt}
-      `)
+     
       const summaryCompletion = await openai.chat.completions.create({
         model: openAIQueryBotModel,
         messages: [{ role: 'assistant', content: summaryPrompt }],
@@ -340,9 +334,7 @@ app.post('/receive-msg', async (req,res)=>{
       .update({ Summary: summaryCompletion.choices[0].message.content})
       .eq('PhoneNumber', `${req.body.From.split(":")[1]}`)
 
-       console.log(`
-      Bot Summary Generate
-       ${summaryCompletion.choices[0].message.content}`)
+      
        
 
  return res.status(200);
